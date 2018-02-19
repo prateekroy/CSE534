@@ -16,3 +16,7 @@ Part B)
 ./mydnssec verisigninc.com
 or
 python dnssec.py verisigninc.com
+
+Part C)
+
+Part3.pdf
