@@ -102,7 +102,8 @@ def resolve(name, type):
 		query = domain + '.' + query
 		# print "Next Try" + query
 
-		# print currLevelServers
+		# print currLevelServers 
+		#if at any level we dont find servers we cannot resolve the dns
 		if not currLevelServers:
 			return []
 
