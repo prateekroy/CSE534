@@ -43,44 +43,33 @@ def ValidateRootServers(server):
 #https://stackoverflow.com/questions/4066614/how-can-i-find-the-authoritative-dns-server-for-a-domain-using-dnspython/4066624
 def GetNextLevelServers(domain, server):
 	# print domain + " - " + server + " - "
-	result = []
-
-	try:
-		query = dns.message.make_query(domain, dns.rdatatype.DNSKEY, want_dnssec = True)
-		response = dns.query.tcp(query, server, timeout=10)
-		if (response.rcode() != dns.rcode.NOERROR):
-		    raise Exception('ERROR')
-
-		# print "-----------------------------------------------------"
-		# print response
-		# print "-----------------------------------------------------"
-
-
-		child_ds,child_algo = ParseAuthoritySection(response)
-	
-		#if there is answer section or there is soa type in authority field this is our server IP
-		if (len(response.answer) > 0 or ((len(response.authority) > 0) and (response.authority[0].rdtype == dns.rdatatype.SOA))):
-			return [server], child_ds, child_algo
-		
-		#Check for addition fields first as they might have direct IPs
-		res = ParseAdditionalSection(response)
-		if res:
-			return res, child_ds, child_algo
-
-		#corner case
-		#Do check for authority section if none hit above as google.co.jp might have some authoritative NS
-		#If found Resolve it like previous
-		if len(response.authority) > 0:
-			#pick the first authoritative server ;to do: check for other ns if any fails
-			if(len(response.authority[0]) > 0):
-				authoritative_ns = response.authority[0][0].to_text()
-				# print authoritative_ns
-				res = resolve(authoritative_ns)
-				return res, child_ds, child_algo
-
-	except Exception:
-		# print "Exception"
+	response = SendTCPQuery(domain, dns.rdatatype.DNSKEY, server, True)
+	if not response:
 		return None
+
+	# print "-----------------------------------------------------"
+	# print response
+	# print "-----------------------------------------------------"
+
+
+	child_ds,child_algo = ParseAuthoritySection(response)
+
+	#if there is answer section or there is soa type in authority field this is our server IP
+	if (len(response.answer) > 0 or ((len(response.authority) > 0) and (response.authority[0].rdtype == dns.rdatatype.SOA))):
+		return [server], child_ds, child_algo
+	
+	#Check for addition fields first as they might have direct IPs
+	res = ParseAdditionalSection(response)
+	if res:
+		return res, child_ds, child_algo
+
+	#corner case
+	#Do check for authority section if none hit above as google.co.jp might have some authoritative NS
+	#If found Resolve it like previous
+	authoritative_ns = ParseAuthoritySectionForNS(response)
+	if authoritative_ns:	
+		# print authoritative_ns
+		return resolve(authoritative_ns), child_ds, child_algo
 
 	return [], None, None
 
@@ -102,7 +91,7 @@ def ParseDNSKeySection(answer):
 		if (entry.rdtype == dns.rdatatype.DNSKEY):
 			# print entry
 			for record in entry:
-				if record.flags == 257:
+				if record.flags == 257:   #257 is KSK, 256 is ZSK
 					return entry, record
 
 	return None, None
@@ -131,6 +120,21 @@ def ParseAdditionalSection(response):
 			res.append(add[0].to_text())
 	
 	return res
+
+def ParseAuthoritySectionForNS(response):
+	if len(response.authority) > 0:
+		#pick the first authoritative server ;to do: check for other ns if any fails
+		if len(response.authority[0]) > 0:
+			return  response.authority[0][0].to_text()
+
+	return None
+
+def SendTCPQuery(domain, type, toserver, dnssecflag):
+	try:
+		query = dns.message.make_query(domain, type, want_dnssec = dnssecflag)
+		return dns.query.tcp(query, toserver, timeout=10)
+	except:
+		return None
 
 def GetZSK(domain, server):
 
@@ -186,6 +190,16 @@ def TwoStepValidation(domain, hash, dslist, RRsig, RRset):
 
 	return True
 
+def PopulateNextLevelServers(currLevelServers, query):
+	for server in currLevelServers:
+		try:
+			nextLevelServers, child_ds, child_algo = GetNextLevelServers(query, server)
+			if (nextLevelServers):
+				return nextLevelServers, child_ds, child_algo
+		except:
+			pass
+
+	return [], None, None
 
 #https://www.grepular.com/Understanding_DNSSEC
 def resolve(name):
@@ -215,16 +229,8 @@ def resolve(name):
 		if not currLevelServers:
 			break
 
-		nextLevelServers = []
-		for server in currLevelServers:
-			try:
-				nextLevelServers, child_ds, child_algo = GetNextLevelServers(query, server)
-				if (nextLevelServers and child_ds and child_algo):
-					break
-			except:
-				pass
-
-		currLevelServers = nextLevelServers
+		nextlevelServers, child_ds, child_algo = PopulateNextLevelServers(currLevelServers, query)
+		currLevelServers = nextlevelServers
 
 	return currLevelServers
 
@@ -238,18 +244,9 @@ def _mydig(name):
 
 	for server in servers:
 		# print server
-		try:
-			query = dns.message.make_query(name, "A")	
-			result = dns.query.tcp(query, server, timeout=10)
-			# rrset = result.answer[0];
-			# rr = rrset[0]
-			# if(rr.rdtype == dns.rdatatype.CNAME):
-			# 	print rr
-			# print result
-			if result:
-				return result
-		except:
-			pass
+		result = SendTCPQuery(name, "A", server, False)
+		if result:
+			return result
 
 	return None
 
@@ -299,7 +296,7 @@ if __name__ == '__main__':
 	# print response
 	# print Format(mydig("www.google.com", "A"), "A")
 	# print mydig("verisigninc.com")
-	# print mydig("www.google.com")
+	# print mydig("google.com")
 	# print mydig("www.dnssec-failed.org")
 	# print mydig("dnssec-tools.org")
 	# print mydig("dnssec-deployment.org")
