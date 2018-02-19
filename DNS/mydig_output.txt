@@ -1,0 +1,54 @@
+
+./mydig	www.cnn.com	A	
+
+Output:
+
+QUESTION SECTION:
+www.cnn.com. IN A
+
+ANSWER SECTION:
+www.cnn.com. 300 IN CNAME turner-tls.map.fastly.net.
+turner-tls.map.fastly.net. 30 IN A 151.101.201.67
+
+Query Time: 0.216000080109 sec
+Mon Feb 19 10:40:24 2018
+MSG SIZE rcvd: 32
+
+./mydig	google.com	NS
+
+Output:
+
+QUESTION SECTION:
+google.com. IN NS
+
+ANSWER SECTION:
+google.com. 345600 IN NS ns4.google.com.
+google.com. 345600 IN NS ns2.google.com.
+google.com. 345600 IN NS ns1.google.com.
+google.com. 345600 IN NS ns3.google.com.
+
+Query Time: 0.18700003624 sec
+Mon Feb 19 10:43:44 2018
+MSG SIZE rcvd: 32
+
+./mydig	google.com	MX
+
+Output:
+
+QUESTION SECTION:
+google.com. IN MX
+
+ANSWER SECTION:
+google.com. 600 IN MX 10 aspmx.l.google.com.
+google.com. 600 IN MX 30 alt2.aspmx.l.google.com.
+google.com. 600 IN MX 20 alt1.aspmx.l.google.com.
+google.com. 600 IN MX 50 alt4.aspmx.l.google.com.
+google.com. 600 IN MX 40 alt3.aspmx.l.google.com.
+
+Query Time: 0.240000009537 sec
+Mon Feb 19 10:44:28 2018
+MSG SIZE rcvd: 32
+
+Q) Write an	explanation	for	why	the	resolution of google.co.jp did not complete	in one pass	in this	corner case?
+
+A) google.co.jp gives a authoritative name server in AUTHORITY field of the response header which is an alias. So we haven't got an IP yet, so we resolve the alias again to get the IP.

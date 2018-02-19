@@ -137,9 +137,9 @@ def Format(result, type, query_time):
 	output += "QUESTION SECTION:\n" + result.question[0].to_text() + "\n\n" + "ANSWER SECTION:\n"
 
 	for ans in result.answer:
-		output += ans.to_text()
+		output += ans.to_text()+"\n"
 
-	output += "\n\n" + "Query Time: "
+	output += "\n" + "Query Time: "
 	output += str(query_time) + " sec\n"
 
 	currentDT = datetime.datetime.now()
@@ -162,7 +162,8 @@ def mydig(name, type):
 
 
 if __name__ == '__main__':
-	domain = sys.argv[1]
-	type = sys.argv[2]
+	# domain = sys.argv[1]
+	# type = sys.argv[2]
+
 
 	print mydig(domain, type)
