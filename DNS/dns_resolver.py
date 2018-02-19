@@ -145,6 +145,7 @@ def _mydig(name, type):
 	if not servers:
 		return None
 
+	#try query each server to resolve and return when success
 	for server in servers:
 		# print server
 		result = SendUDPQuery(name, type, server)
