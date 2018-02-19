@@ -14,6 +14,9 @@ Query Time: 0.216000080109 sec
 Mon Feb 19 10:40:24 2018
 MSG SIZE rcvd: 32
 
+----------------------------------------------------------------
+
+
 ./mydig	google.com	NS
 
 Output:
@@ -30,6 +33,8 @@ google.com. 345600 IN NS ns3.google.com.
 Query Time: 0.18700003624 sec
 Mon Feb 19 10:43:44 2018
 MSG SIZE rcvd: 32
+
+---------------------------------------------------------------
 
 ./mydig	google.com	MX
 
@@ -48,6 +53,8 @@ google.com. 600 IN MX 40 alt3.aspmx.l.google.com.
 Query Time: 0.240000009537 sec
 Mon Feb 19 10:44:28 2018
 MSG SIZE rcvd: 32
+
+----------------------------------------------------------------
 
 Q) Write an	explanation	for	why	the	resolution of google.co.jp did not complete	in one pass	in this	corner case?
 
