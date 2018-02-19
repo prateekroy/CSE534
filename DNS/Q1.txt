@@ -1,0 +1,5 @@
+Q) Write an	explanation	for	why	the	resolution of google.co.jp did not complete	in one pass	in this	corner case?
+
+A) google.co.jp gives a authoritative name server in AUTHORITY field of the response header which is an alias. So we haven't got an IP yet, so we resolve the alias again to get the IP.
+
+ 	
