@@ -163,7 +163,7 @@ def Validate(domain, ZSK, RRsig, RRset, child_ds, child_algo):
 	    hash_key = dns.dnssec.make_ds(domain, ZSK, child_algo)
 	    return TwoStepValidation(domain, hash_key, [child_ds], RRsig, RRset)
 	else:
-		print "Not Supported DNSSEC"
+		print "DNSSEC not supported"
 		return False
 
 def TwoStepValidation(domain, hash, dslist, RRsig, RRset):
@@ -174,14 +174,14 @@ def TwoStepValidation(domain, hash, dslist, RRsig, RRset):
 			hashverified = True
 
 	if not hashverified:
-		print "Failed DNSSEC"
+		print "DNSSec verification failed"
 		return False
 
 	#step 2 : if ds matches check for validating the public key
 	try:
 		dns.dnssec.validate(RRset, RRsig, {dns.name.from_text(domain): RRset})
 	except dns.dnssec.ValidationFailure:
-		print "Failed DNSSEC"
+		print "DNSSec verification failed"
 		return False
 
 	return True
@@ -297,8 +297,8 @@ if __name__ == '__main__':
 	# print Format(mydig("www.google.com", "A"), "A")
 	# print mydig("verisigninc.com")
 	# print mydig("www.google.com")
-	# print mydig("www.dnssec-failed.org")
-	print mydig("dnssec-tools.org")
+	print mydig("www.dnssec-failed.org")
+	# print mydig("dnssec-tools.org")
 	# print mydig("dnssec-deployment.org")
 
 	
