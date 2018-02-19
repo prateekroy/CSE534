@@ -44,11 +44,8 @@ def GetNextLevelServers(domain, server, category):
 			return [server]
 		
 		#Check for addition fields first as they might have direct IPs
-		if(len(response.additional) > 0):
-			res = []
-			for add in response.additional:
-				res.append(add[0].to_text())
-
+		res = ParseAdditionalSection(response)
+		if res:
 			return res
 
 		#Do check for authority section if none hit above as google.co.jp might have some authoritative NS
@@ -65,6 +62,13 @@ def GetNextLevelServers(domain, server, category):
 
 	return []
 
+def ParseAdditionalSection(response):
+	res = []
+	if(len(response.additional) > 0):
+		for add in response.additional:
+			res.append(add[0].to_text())
+	
+	return res
 
 def resolve(name, type):
 	domainHier = SplitDomain(name)
@@ -155,5 +159,6 @@ def mydig(name, type):
 	else:
 		print "Cannot Resolve DNS!"
 
+
 if __name__ == '__main__':
-	print mydig("google.co.jp", "NS")
+	print mydig("google.co.jp", "A")
