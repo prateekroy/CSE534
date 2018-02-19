@@ -2,6 +2,7 @@ External Libraries used:
 
 dnspython
 pycrypto 2.6.1
+dnssec
 
 Steps to run the program:
 
