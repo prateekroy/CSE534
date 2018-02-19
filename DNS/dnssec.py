@@ -291,13 +291,15 @@ def mydig(name):
 
 
 if __name__ == '__main__':
+	domain = sys.argv[1]
+	print mydig(domain)
 	# query = dns.message.make_query("www.google.com", "A")
 	# response = dns.query.udp(query, "216.239.34.10", timeout=1)
 	# print response
 	# print Format(mydig("www.google.com", "A"), "A")
 	# print mydig("verisigninc.com")
 	# print mydig("www.google.com")
-	print mydig("www.dnssec-failed.org")
+	# print mydig("www.dnssec-failed.org")
 	# print mydig("dnssec-tools.org")
 	# print mydig("dnssec-deployment.org")
 

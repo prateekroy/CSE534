@@ -125,11 +125,12 @@ def _mydig(name, type):
 	return None
 
 def Format(result, type, query_time):
-	rrset = result.answer[0]
-	rr = rrset[0]	
-	if(type == "A" and rr.rdtype == dns.rdatatype.CNAME):
-		cname_ans = _mydig(str(rr), "A")
-		result.answer += cname_ans.answer
+	if(len(result.answer)>0):
+		rrset = result.answer[0]
+		rr = rrset[0]	
+		if(type == "A" and rr.rdtype == dns.rdatatype.CNAME):
+			cname_ans = _mydig(str(rr), "A")
+			result.answer += cname_ans.answer
 
 	output = ""
 
@@ -161,4 +162,7 @@ def mydig(name, type):
 
 
 if __name__ == '__main__':
-	print mydig("google.co.jp", "A")
+	domain = sys.argv[1]
+	type = sys.argv[2]
+
+	print mydig(domain, type)
