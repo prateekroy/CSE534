@@ -27,40 +27,27 @@ def GetTLD(domain):
 #Check if the root server is validated
 def ValidateRootServers(server):
 	#http://data.iana.org/root-anchors/root-anchors.xml
-	root_ds1 = str('19036 8 2 49AAC11D7B6F6446702E54A1607371607A1A41855200FD2CE1CDDE32F24E8FB5').lower()
-	root_ds2 = str('20326 8 2 E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D').lower()
-
-	(RRsig, RRset, ZSK) = GetZSK('.', server)
+	root_dslist = ['19036 8 2 49aac11d7b6f6446702e54a1607371607a1a41855200fd2ce1cdde32f24e8fb5', '20326 8 2 e06d44b80b8f1d39a95c0b0d7c65d08458e880409bbc683457104237c7f8ec8d']
+	RRsig, RRset, ZSK = GetZSK('.', server)
 	if not ZSK or not RRsig or not RRset:
 	    return False
 
 	hash = dns.dnssec.make_ds('.', ZSK, 'sha256')
 	# print hash
 
-	#validate root servers by comparing their ds value with the signed ds
-	if (str(hash) != root_ds1 and str(hash) != root_ds2):
-		print "Failed to Validate Root Server"
-		return False
+	#validate using two step verification
+	return TwoStepValidation('.', str(hash), root_dslist, RRsig, RRset)
 
-	#if ds matches check for validating the public key
-	try:
-	    dns.dnssec.validate(RRset, RRsig, {dns.name.from_text('.'): RRset})
-	except dns.dnssec.ValidationFailure:
-	    print "Failed to Validate Root Server"
-	    return False
 
-	return True
 
 #https://stackoverflow.com/questions/4066614/how-can-i-find-the-authoritative-dns-server-for-a-domain-using-dnspython/4066624
 def GetNextLevelServers(domain, server):
 	# print domain + " - " + server + " - "
 	result = []
-	child_ds = None
-	child_algo = None
 
 	try:
 		query = dns.message.make_query(domain, dns.rdatatype.DNSKEY, want_dnssec = True)
-		response = dns.query.tcp(query, server, timeout=1)
+		response = dns.query.tcp(query, server, timeout=10)
 		if (response.rcode() != dns.rcode.NOERROR):
 		    raise Exception('ERROR')
 
@@ -68,30 +55,19 @@ def GetNextLevelServers(domain, server):
 		# print response
 		# print "-----------------------------------------------------"
 
-		if len(response.authority) > 0:
-			#Extract the DS field of authorative section for child and algorithm
-			for auth in response.authority:
-				if (auth.rdtype == dns.rdatatype.DS):
-					child_ds = auth[0]
-					if (auth[0].digest_type == 1):
-						child_algo = "sha1"
-					elif (auth[0].digest_type == 2):
-						child_algo = "sha256"
-					# break
 
+		child_ds,child_algo = ParseAuthoritySection(response)
 	
 		#if there is answer section or there is soa type in authority field this is our server IP
 		if (len(response.answer) > 0 or ((len(response.authority) > 0) and (response.authority[0].rdtype == dns.rdatatype.SOA))):
 			return [server], child_ds, child_algo
 		
 		#Check for addition fields first as they might have direct IPs
-		if(len(response.additional) > 0):
-			res = []
-			for add in response.additional:
-				res.append(add[0].to_text())
-
+		res = ParseAdditionalSection(response)
+		if res:
 			return res, child_ds, child_algo
 
+		#corner case
 		#Do check for authority section if none hit above as google.co.jp might have some authoritative NS
 		#If found Resolve it like previous
 		if len(response.authority) > 0:
@@ -131,11 +107,36 @@ def ParseDNSKeySection(answer):
 
 	return None, None
 
+def ParseAuthoritySection(response):
+	child_ds = None
+	child_algo = None
+	
+	if len(response.authority) > 0:
+		#Extract the DS field of authorative section for child and algorithm
+		for auth in response.authority:
+			if (auth.rdtype == dns.rdatatype.DS):
+				child_ds = auth[0]
+				if (auth[0].digest_type == 1):
+					child_algo = "sha1"
+				elif (auth[0].digest_type == 2):
+					child_algo = "sha256"
+				# break
+
+	return child_ds, child_algo
+
+def ParseAdditionalSection(response):
+	res = []
+	if(len(response.additional) > 0):
+		for add in response.additional:
+			res.append(add[0].to_text())
+	
+	return res
+
 def GetZSK(domain, server):
 
     try:
 		query = dns.message.make_query(domain, dns.rdatatype.DNSKEY, want_dnssec=True)
-		response = dns.query.tcp(query, server, timeout=1)
+		response = dns.query.tcp(query, server, timeout=10)
 		if (response.rcode() != dns.rcode.NOERROR):
 		    raise Exception('ERROR')
 
@@ -160,22 +161,30 @@ def SplitDomain(dom):
 def Validate(domain, ZSK, RRsig, RRset, child_ds, child_algo):
 	if child_algo and child_ds and ZSK and RRsig:
 	    hash_key = dns.dnssec.make_ds(domain, ZSK, child_algo)
-	    if hash_key != child_ds:
-	    	print "Failed DNSSEC"
-	        return False
-
-	    try:
-	        dns.dnssec.validate(RRset, RRsig, {dns.name.from_text(domain): RRset})
-	    except dns.dnssec.ValidationFailure:
-	    	print "Failed DNSSEC"
-	        return False
+	    return TwoStepValidation(domain, hash_key, [child_ds], RRsig, RRset)
 	else:
 		print "Not Supported DNSSEC"
 		return False
 
+def TwoStepValidation(domain, hash, dslist, RRsig, RRset):
+	#step 1: verify the hash with parent ds
+	hashverified = False;
+	for ds in dslist:
+		if ds == hash:
+			hashverified = True
+
+	if not hashverified:
+		print "Failed DNSSEC"
+		return False
+
+	#step 2 : if ds matches check for validating the public key
+	try:
+		dns.dnssec.validate(RRset, RRsig, {dns.name.from_text(domain): RRset})
+	except dns.dnssec.ValidationFailure:
+		print "Failed DNSSEC"
+		return False
+
 	return True
-
-
 
 
 #https://www.grepular.com/Understanding_DNSSEC
@@ -231,7 +240,7 @@ def _mydig(name):
 		# print server
 		try:
 			query = dns.message.make_query(name, "A")	
-			result = dns.query.tcp(query, server, timeout=1)
+			result = dns.query.tcp(query, server, timeout=10)
 			# rrset = result.answer[0];
 			# rr = rrset[0]
 			# if(rr.rdtype == dns.rdatatype.CNAME):
@@ -286,10 +295,10 @@ if __name__ == '__main__':
 	# response = dns.query.udp(query, "216.239.34.10", timeout=1)
 	# print response
 	# print Format(mydig("www.google.com", "A"), "A")
-	print mydig("verisigninc.com")
+	# print mydig("verisigninc.com")
 	# print mydig("www.google.com")
 	# print mydig("www.dnssec-failed.org")
-	# print mydig("dnssec-tools.org")
+	print mydig("dnssec-tools.org")
 	# print mydig("dnssec-deployment.org")
 
 	
