@@ -29,36 +29,29 @@ def SplitDomain(dom):
 #https://stackoverflow.com/questions/4066614/how-can-i-find-the-authoritative-dns-server-for-a-domain-using-dnspython/4066624
 def GetNextLevelServers(domain, server, category):
 	# print domain + " - " + server + " - "
-	try:
-		query = dns.message.make_query(domain, category)
-		response = dns.query.udp(query, server, timeout=1)
-		if (response.rcode() != dns.rcode.NOERROR):
-		    raise Exception('ERROR')
-		
-		# print "-------------------------------------"
-		# print response
-		# print "-------------------------------------"
-
-		#if there is answer section or there is soa type in authority field this is our server IP
-		if (len(response.answer) > 0 or ((len(response.authority) > 0) and (response.authority[0].rdtype == dns.rdatatype.SOA))):
-			return [server]
-		
-		#Check for addition fields first as they might have direct IPs
-		res = ParseAdditionalSection(response)
-		if res:
-			return res
-
-		#Do check for authority section if none hit above as google.co.jp might have some authoritative NS
-		#If found Resolve it like previous
-		if len(response.authority) > 0:
-			#pick the first authoritative server ;to do: check for other ns if any fails
-			authoritative_ns = response.authority[0][0].to_text()
-			# print authoritative_ns
-			return resolve(authoritative_ns, category)
-
-	except Exception:
-		# print "Exception"
+	response = SendUDPQuery(domain, category, server)
+	if not response:
 		return None
+
+	# print "-------------------------------------"
+	# print response
+	# print "-------------------------------------"
+
+	#if there is answer section or there is soa type in authority field this is our server IP
+	if (len(response.answer) > 0 or ((len(response.authority) > 0) and (response.authority[0].rdtype == dns.rdatatype.SOA))):
+		return [server]
+	
+	#Check for addition fields first as they might have direct IPs
+	res = ParseAdditionalSection(response)
+	if res:
+		return res
+
+	#Do check for authority section if none hit above as google.co.jp might have some authoritative NS
+	#If found Resolve it like previous
+	authoritative_ns = ParseAuthoritySection(response)
+	if authoritative_ns:	
+		# print authoritative_ns
+		return resolve(authoritative_ns, category)
 
 	return []
 
@@ -69,6 +62,32 @@ def ParseAdditionalSection(response):
 			res.append(add[0].to_text())
 	
 	return res
+
+def ParseAuthoritySection(response):
+	if len(response.authority) > 0:
+		#pick the first authoritative server ;to do: check for other ns if any fails
+		return  response.authority[0][0].to_text()
+
+	return None
+
+def PopulateNextLevelServers(currLevelServers, query, type):
+	for server in currLevelServers:
+		try:
+			nextlevelServers = GetNextLevelServers(query, server, type)
+			if nextlevelServers:
+				return nextlevelServers
+		except:
+			pass
+
+	return None
+
+def SendUDPQuery(domain, type, toserver):
+	try:
+		query = dns.message.make_query(domain, type)	
+		return dns.query.udp(query, toserver, timeout=1)	
+	except:
+		return None
+
 
 def resolve(name, type):
 	domainHier = SplitDomain(name)
@@ -87,42 +106,11 @@ def resolve(name, type):
 		if not currLevelServers:
 			return []
 
-		nextLevelServers = []
-		for server in currLevelServers:
-			try:
-				nextlevelServers = GetNextLevelServers(query, server, type)
-				if nextlevelServers:
-					break
-			except:
-				pass
-
+		nextlevelServers = PopulateNextLevelServers(currLevelServers, query, type)
 		currLevelServers = nextlevelServers
 
 	return currLevelServers
 
-
-def _mydig(name, type):	
-	servers = resolve(name, type)
-	query = dns.message.make_query(name, type)	
-
-	if not servers:
-		return None
-
-	for server in servers:
-		# print server
-		try:
-			result = dns.query.udp(query, server, timeout=1)
-			# rrset = result.answer[0];
-			# rr = rrset[0]
-			# if(rr.rdtype == dns.rdatatype.CNAME):
-			# 	print rr
-			# print result
-			if result:
-				return result
-		except:
-			pass
-
-	return None
 
 def Format(result, type, query_time):
 	if(len(result.answer)>0):
@@ -150,6 +138,21 @@ def Format(result, type, query_time):
 	return output
 
 
+def _mydig(name, type):	
+	servers = resolve(name, type)
+
+	if not servers:
+		return None
+
+	for server in servers:
+		# print server
+		result = SendUDPQuery(name, type, server)
+		if result:
+			return result
+
+	return None
+
+
 def mydig(name, type):
 	#profiling
 	start_time = time.time()
@@ -165,7 +168,7 @@ if __name__ == '__main__':
 	domain = sys.argv[1]
 	type = sys.argv[2]
 
-	# domain = "google.com"
-	# type = "MX"
+	# domain = "google.co.jp"
+	# type = "A"
 
 	print mydig(domain, type)
