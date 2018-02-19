@@ -27,29 +27,29 @@ def GetTLD(domain):
 #Check if the root server is validated
 def ValidateRootServers(server):
 	#http://data.iana.org/root-anchors/root-anchors.xml
-    ds1 = str('19036 8 2 49AAC11D7B6F6446702E54A1607371607A1A41855200FD2CE1CDDE32F24E8FB5').lower()
-    ds2 = str('20326 8 2 E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D').lower()
+	root_ds1 = str('19036 8 2 49AAC11D7B6F6446702E54A1607371607A1A41855200FD2CE1CDDE32F24E8FB5').lower()
+	root_ds2 = str('20326 8 2 E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D').lower()
 
-    (RRsig, RRset, ZSK) = GetZSK('.', server)
-    if not ZSK or not RRsig or not RRset:
-        return False
+	(RRsig, RRset, ZSK) = GetZSK('.', server)
+	if not ZSK or not RRsig or not RRset:
+	    return False
 
-    hash = dns.dnssec.make_ds('.', ZSK, 'sha256')
-    # print hash
+	hash = dns.dnssec.make_ds('.', ZSK, 'sha256')
+	# print hash
 
-    #validate root servers by comparing their ds value with the signed ds
-    if (str(hash) != ds1 and str(hash) != ds2):
-    	print "Failed to Validate Root Server"
-    	return False
+	#validate root servers by comparing their ds value with the signed ds
+	if (str(hash) != root_ds1 and str(hash) != root_ds2):
+		print "Failed to Validate Root Server"
+		return False
 
-    #if ds matches check for validating the public key
-    try:
-        dns.dnssec.validate(RRset, RRsig, {dns.name.from_text('.'): RRset})
-    except dns.dnssec.ValidationFailure:
-        print "Failed to Validate Root Server"
-        return False
+	#if ds matches check for validating the public key
+	try:
+	    dns.dnssec.validate(RRset, RRsig, {dns.name.from_text('.'): RRset})
+	except dns.dnssec.ValidationFailure:
+	    print "Failed to Validate Root Server"
+	    return False
 
-    return True
+	return True
 
 #https://stackoverflow.com/questions/4066614/how-can-i-find-the-authoritative-dns-server-for-a-domain-using-dnspython/4066624
 def GetNextLevelServers(domain, server):
@@ -73,7 +73,10 @@ def GetNextLevelServers(domain, server):
 			for auth in response.authority:
 				if (auth.rdtype == dns.rdatatype.DS):
 					child_ds = auth[0]
-					child_algo = auth[0].digest_type
+					if (auth[0].digest_type == 1):
+						child_algo = "sha1"
+					elif (auth[0].digest_type == 2):
+						child_algo = "sha256"
 					# break
 
 	
@@ -156,12 +159,7 @@ def SplitDomain(dom):
 
 def Validate(domain, ZSK, RRsig, RRset, child_ds, child_algo):
 	if child_algo and child_ds and ZSK and RRsig:
-	    hash_key = None
-	    if child_algo == 1:
-	       hash_key = dns.dnssec.make_ds(domain, ZSK, 'sha1')
-	    else:
-	        hash_key = dns.dnssec.make_ds(domain, ZSK, 'sha256')
-	    
+	    hash_key = dns.dnssec.make_ds(domain, ZSK, child_algo)
 	    if hash_key != child_ds:
 	    	print "Failed DNSSEC"
 	        return False
@@ -283,7 +281,6 @@ def mydig(name):
 		return ""
 
 
-
 if __name__ == '__main__':
 	# query = dns.message.make_query("www.google.com", "A")
 	# response = dns.query.udp(query, "216.239.34.10", timeout=1)
@@ -292,3 +289,9 @@ if __name__ == '__main__':
 	print mydig("verisigninc.com")
 	# print mydig("www.google.com")
 	# print mydig("www.dnssec-failed.org")
+	# print mydig("dnssec-tools.org")
+	# print mydig("dnssec-deployment.org")
+
+	
+
+	
