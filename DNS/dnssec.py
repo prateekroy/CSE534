@@ -292,6 +292,7 @@ def mydig(name):
 
 if __name__ == '__main__':
 	domain = sys.argv[1]
+	# domain = "www.cnn.com"
 	print mydig(domain)
 	# query = dns.message.make_query("www.google.com", "A")
 	# response = dns.query.udp(query, "216.239.34.10", timeout=1)

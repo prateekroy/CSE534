@@ -162,8 +162,10 @@ def mydig(name, type):
 
 
 if __name__ == '__main__':
-	# domain = sys.argv[1]
-	# type = sys.argv[2]
+	domain = sys.argv[1]
+	type = sys.argv[2]
 
+	# domain = "google.com"
+	# type = "MX"
 
 	print mydig(domain, type)
