@@ -138,22 +138,17 @@ def SendTCPQuery(domain, type, toserver, dnssecflag):
 
 def GetZSK(domain, server):
 
-    try:
-		query = dns.message.make_query(domain, dns.rdatatype.DNSKEY, want_dnssec=True)
-		response = dns.query.tcp(query, server, timeout=10)
-		if (response.rcode() != dns.rcode.NOERROR):
-		    raise Exception('ERROR')
+	response = SendTCPQuery(domain, dns.rdatatype.DNSKEY, server, True)
+	if not response:
+		return None
 
-		# print "******************************************************"
-		# print response
-		# print "******************************************************"
+	# print "******************************************************"
+	# print response
+	# print "******************************************************"
 
-		RRsig = ParseRRsigSection(response.answer)
-		RRset, ZSK = ParseDNSKeySection(response.answer)
-		return RRsig, RRset, ZSK
-
-    except Exception:
-        return None, None, None
+	RRsig = ParseRRsigSection(response.answer)
+	RRset, ZSK = ParseDNSKeySection(response.answer)
+	return RRsig, RRset, ZSK
 
 
 def SplitDomain(dom):
