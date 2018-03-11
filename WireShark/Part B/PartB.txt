@@ -1,0 +1,61 @@
+For calculating the congestion window, we keep track of last sequence number sent, this will keep on increasing until a ack comes for any of the past sent packet. Whenever the ack comes we calculate the congestion window by subtracting the last sequence number sent - ack number received as we can conclude that for these many packets we did not receive any acknowledgment, so this our congestion window (basically these packets are still in senders buffer). The congestion window size increases because of the property of TCP that cwnd is increased until there is a loss, and when loss occurs, cwnd decreases.
+
+Congestion window can be calculated at any end(sender or receiver) because the both the sender and receiver use the buffer of same length and they calculate on basis of sequence number sent and ack number received.
+
+Initial Congestion Window = 1 MSS = 1460 
+(https://en.wikipedia.org/wiki/TCP_congestion_control)
+
+Connection 1:
+Congestion Window : 11584
+Congestion Window : 13032
+Congestion Window : 14480
+Congestion Window : 15928
+Congestion Window : 17376
+Congestion Window : 18824
+Congestion Window : 20272
+Congestion Window : 18824
+Congestion Window : 17376
+Congestion Window : 15928
+
+
+Connection 2:
+Congestion Window : 11584
+Congestion Window : 13032
+Congestion Window : 11584
+Congestion Window : 15928
+Congestion Window : 17376
+Congestion Window : 15928
+Congestion Window : 14480
+Congestion Window : 17376
+Congestion Window : 18824
+Congestion Window : 17376
+
+
+Connection 3:
+Congestion Window : 11584
+Congestion Window : 13032
+Congestion Window : 11584
+Congestion Window : 10136
+Congestion Window : 8688
+Congestion Window : 7240
+Congestion Window : 5792
+Congestion Window : 4344
+Congestion Window : 2896
+Congestion Window : 1448
+
+
+Task 2:
+For calculating number of retransmission occured due to triple duplicate ack, we keep two dictionary, one (seqDict) to calculate the number of packets with same sequence number and another dictionary (ackDict) to calculate the number of packets with same ack number. Now, we traverse the sequence dictionary and find whether the sequence number was present in ackDict and the the same acknowledgment was received more than two times which means there was triple duplicate acknowledgment.
+Total loss is calculated as done in Part A i.e count the number of packets whose sequence number is repeated. Therefore the total loss due to timeout is total loss - loss due to triple duplicate ack.
+
+Connection 1:
+Retransmissions due to Triple Ack Loss : 2
+Loss due to timeout : 2
+
+Connection 2:
+Retransmissions due to Triple Ack Loss : 36
+Loss due to timeout : 59
+
+Connection 3:
+Retransmissions due to Triple Ack Loss : 0
+Loss due to timeout : 1

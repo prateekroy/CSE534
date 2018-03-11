@@ -1,0 +1,81 @@
+Command to run tcpdump:
+sudo tcpdump -i en0 -n port 1080 -w http_1080.pcap
+sudo tcpdump -i en0 -n port 1081 -w http_1081.pcap
+sudo tcpdump -i en0 -n port 1082 -w http_1082.pcap
+
+In this part we parse the http header in addition to Part A (tcp header). In http header, the request and response are filled from 66-69 byte of buff. After we fill these request and response we can check whether the packet is either a GET request or a HTTP response.
+
+Task 1:
+In case of HTTP1.0, we do this task:
+To pair each GET with a HTTP response, I keep a queue, and whenever I get a "GET" request , i push that packet in the queue. Whenever I get a "HTTP" response, it is the response for the first GET request in the queue and similarly this method is repeated for all packets.
+
+GET           172.24.16.236 34.193.77.105 803109682 817422346
+HTTP RESPONSE 34.193.77.105 172.24.16.236 3806655260 2365505301
+GET           172.24.16.236 34.193.77.105 277396174 4291996737
+HTTP RESPONSE 34.193.77.105 172.24.16.236 4291996737 277396562
+GET           172.24.16.236 34.193.77.105 3886097707 1486465345
+HTTP RESPONSE 34.193.77.105 172.24.16.236 3373545629 1892220178
+GET           172.24.16.236 34.193.77.105 2365504913 3806655260
+HTTP RESPONSE 34.193.77.105 172.24.16.236 2481599123 1837964571
+GET           172.24.16.236 34.193.77.105 120788846 1270312596
+HTTP RESPONSE 34.193.77.105 172.24.16.236 289605232 879721429
+GET           172.24.16.236 34.193.77.105 127211390 1839512486
+HTTP RESPONSE 34.193.77.105 172.24.16.236 1839512486 127211775
+GET           172.24.16.236 34.193.77.105 3964326278 479685728
+HTTP RESPONSE 34.193.77.105 172.24.16.236 479685728 3964326705
+GET           172.24.16.236 34.193.77.105 1683238309 2156415119
+HTTP RESPONSE 34.193.77.105 172.24.16.236 2156415119 1683238694
+GET           172.24.16.236 34.193.77.105 1561218073 1054187706
+HTTP RESPONSE 34.193.77.105 172.24.16.236 1054187706 1561218463
+GET           172.24.16.236 34.193.77.105 3710195459 1491800523
+HTTP RESPONSE 34.193.77.105 172.24.16.236 1491800523 3710195843
+GET           172.24.16.236 34.193.77.105 1837964181 2481599123
+HTTP RESPONSE 34.193.77.105 172.24.16.236 817422346 803110075
+GET           172.24.16.236 34.193.77.105 1892219783 3373545629
+HTTP RESPONSE 34.193.77.105 172.24.16.236 1486465345 3886098096
+GET           172.24.16.236 34.193.77.105 392705952 438332120
+HTTP RESPONSE 34.193.77.105 172.24.16.236 438332120 392706297
+GET           172.24.16.236 34.193.77.105 2523063669 1934081015
+HTTP RESPONSE 34.193.77.105 172.24.16.236 1934081015 2523064054
+GET           172.24.16.236 34.193.77.105 1015804995 3174536032
+HTTP RESPONSE 34.193.77.105 172.24.16.236 3174536032 1015805385
+GET           172.24.16.236 34.193.77.105 4279052499 3087896382
+HTTP RESPONSE 34.193.77.105 172.24.16.236 3087896382 4279052884
+GET           172.24.16.236 34.193.77.105 879721040 289605232
+HTTP RESPONSE 34.193.77.105 172.24.16.236 1270312596 120789234
+
+Task 2:
+The tcpdump(http_1080.pcap) taken over 1080 port is HTTP 1.0. Reasons are, we can see from the pcap file that there are 17 tcp connections made for loading the webpage. If we see the page source of the website, it has 17 objects which needs to be requested through http. So the browser makes 17 connections to fetch each object. 
+No of tcp connections : 17
+
+The tcpdump(http_1081.pcap) taken over 1081 port is HTTP 1.1. Reasons are, we can see from the pcap file that there are 6 tcp connections made by the browser when we fetch the website and those connections are reused. This is how HTTP 1.1 makes persistent connection.
+No of tcp connections : 6
+
+The tcpdump(http_1082.pcap) taken over 1082 port is HTTP 2.0 Reasons are, as we can see from the pcap file that there are 2 tcp connection established by the browser when we fetch the website and that persistent connection is reused.
+No of tcp connections : 2
+
+Task 3:
+Time Calculation:
+	HTTP 1.0 :
+	No of tcp connections : 17
+	Time Taken : 1.21857500076
+	Packet Count : 2566
+	Raw data size : 2314706
+
+	HTTP 1.1
+	No of tcp connections : 6
+	Time Taken : 1.50372695923
+	Packet Count : 2664
+	Raw data size : 2344661
+
+	HTTP 2.0
+	No of tcp connections : 2
+	Time Taken : 1.24346709251
+	Packet Count : 2111
+	Raw data size : 2319830
+	
+	HTTP 1.0 has similar speed with HTTP2.0 which is fastest.
+	HTTP 1.1 is slowest
+	
+	HTTP1.1 sent most number of packets and even the raw data
+	HTTP 2.0 sent the least number of packets and even the least raw data
