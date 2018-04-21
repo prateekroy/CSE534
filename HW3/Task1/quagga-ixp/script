@@ -1,0 +1,32 @@
+H1 echo 1 > /proc/sys/net/ipv4/ip_forward
+R1 echo 1 > /proc/sys/net/ipv4/ip_forward
+R2 echo 1 > /proc/sys/net/ipv4/ip_forward
+R3 echo 1 > /proc/sys/net/ipv4/ip_forward
+R4 echo 1 > /proc/sys/net/ipv4/ip_forward
+H2 echo 1 > /proc/sys/net/ipv4/ip_forward
+
+R1 ip addr add 173.0.1.1/16 dev R1-eth1
+R1 ip addr add 174.0.1.1/16 dev R1-eth2
+R2 ip addr add 175.0.1.1/16 dev R2-eth1
+R3 ip addr add 176.0.1.1/16 dev R3-eth1
+R4 ip addr add 175.0.1.2/16 dev R4-eth1
+R4 ip addr add 176.0.1.2/16 dev R4-eth2
+
+H1 ip route add default via 172.0.1.2 dev H1-eth0
+H2 ip route add default via 177.0.1.2 dev H2-eth0
+
+R1 ip route add 176.0.0.0/16 via 174.0.1.2 dev R1-eth2
+R1 ip route add default via 173.0.1.2 dev R1-eth1
+
+R2 ip route add 172.0.0.0/16 via 173.0.1.1 dev R2-eth0
+R2 ip route add 174.0.0.0/16 via 173.0.1.1 dev R2-eth0
+R2 ip route add default via 175.0.1.2 dev R2-eth1
+
+
+R3 ip route add 172.0.0.0/16 via 174.0.1.1 dev R3-eth0
+R3 ip route add 173.0.0.0/16 via 174.0.1.1 dev R3-eth0
+R3 ip route add default via 176.0.1.2 dev R3-eth1
+
+R4 ip route add 174.0.0.0/16 via 176.0.1.1 dev R4-eth2
+R4 ip route add default via 175.0.1.1 dev R4-eth1
+
