@@ -1,0 +1,32 @@
+{
+    "H1": 
+    [
+    {"neighbor": "R1"}
+    ],
+    "R1":
+    [
+    {"neighbor": "R2"},
+    {"neighbor": "R3"},
+    {"neighbor": "H1"}
+    ],
+    "R2":
+    [
+    {"neighbor": "R1"},
+    {"neighbor": "R4"}
+    ],
+    "R3":
+    [
+    {"neighbor": "R1"},
+    {"neighbor": "R4"}
+    ],
+    "R4":
+    [
+    {"neighbor": "R2"},
+    {"neighbor": "R3"},
+    {"neighbor": "H2"}
+    ],
+    "H2":
+    [
+    {"neighbor": "R4"}
+    ]
+}

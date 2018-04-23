@@ -1,0 +1,32 @@
+{
+    "H1": 
+    [
+    {"dest": "R1", "cost": 2, "nexthop": "R1"}
+    ],
+    "R1":
+    [
+    {"dest": "H1", "cost": 2, "nexthop": "H1"},
+    {"dest": "R2", "cost": 10, "nexthop": "R2"},
+    {"dest": "R3", "cost": 6, "nexthop": "R3"}
+    ],
+    "R2":
+    [
+    {"dest": "R1", "cost": 10, "nexthop": "R1"},
+    {"dest": "R4", "cost": 4, "nexthop": "R4"}
+    ], 
+    "R3":
+    [
+    {"dest": "R1", "cost": 6, "nexthop": "R1"},
+    {"dest": "R4", "cost": 5, "nexthop": "R4"}
+    ],  
+    "R4": 
+    [
+    {"dest": "H2", "cost": 2, "nexthop": "H2"},
+    {"dest": "R2", "cost": 4, "nexthop": "R2"},
+    {"dest": "R3", "cost": 5, "nexthop": "R3"}
+    ],
+    "H2":
+    [
+    {"dest": "R4", "cost": 2, "nexthop": "R4"}
+    ]
+}
