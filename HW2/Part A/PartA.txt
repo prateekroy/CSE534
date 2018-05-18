@@ -1,0 +1,54 @@
+The library used to parse the tcp data is dpkt. dpkt library gives us the timestamp and buffer.
+The struct library parses the buffer in bytes and big-endian format and we extract the tcp header fields as well as IP header fields. We skip the ethernet header fields. Ethernet header is 14bytes and IP header has 20bytes.
+We start extracting IP from 26Bytes and so on. 
+All these parameters are parsed and stored in Packet class. We parse the tcp header and keep it in a database(db) object. This db object is used by all the tasks.
+
+Task 1:
+No of TCP flows = 3
+We calculate the no of tcp flows by calculating the number of syn-ack packets. Each syn-ack denote handshaking is successful. So, number of handshaking packets denotes number of TCP flows.
+
+Task 2:
+To calculate throughput, I use the packet size to calculate the total packet size which is sent from source to destination. We also use the timestamp field of first and last packet to calculate the total time taken for transmission of all packets from source to destination. Throughput is total packet size divided by total time taken.
+
+As proved in the class, theoretical throughput is calculated from formula Throughput = (sqroot(3/2) * 1 MSS) / (sqroot(p) * RTT) 
+where p = loss rate,
+RTT = Avg Round trip time (Task 4)
+MSS = 1460 (calculated in code)
+
+
+Connection 1:
+Throughput : 5251391.11291
+Theoretical throughput = 1020998.4407(calculated from above formula)
+
+
+Connection 2:
+Throughput : 1285420.72683
+Theoretical throughput = 92272.931
+
+
+Connection 3:
+Throughput : 1481506.38483
+Theoretical throughput = 669992.327
+
+
+Task 3:
+To calculate loss, I keep the count of how many times a packet with same sequence number is transmitted from sender to receiver. Multiple sequence number means the packet was lost and the sender had to resend the packet. Total loss is total number of packets retransmitted from sender to reciever.
+Loss rate is calculated by total loss divided by total number of packets.
+
+Connection 1:
+Loss Rate : 0.000573312311882
+Connection 2:
+Loss Rate : 0.0134408602151
+Connection 3:
+Loss Rate : 0.00137174211248
+
+
+Task 4:
+To calculate the Round trip time, I keep all the time stamp of all packets sent from sender to receiver and vice versa in a dictionary where key is the sequence number of the packets. So for each sent packet (sequence number) from sender to reciever there is the same number in acknowledgment field of the reciever to sender packet. Using this information, we calculate the difference in time between the packet with same sequence number as of with same acknowledgment number. Average RTT is total time taken divided by total number of transactions.
+
+Connection 1:
+Average RTT : 0.0731438426165
+Connection 2:
+Average RTT : 0.167151638035
+Connection 3:
+Average RTT : 0.0720596951351
